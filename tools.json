@@ -1,0 +1,94 @@
+{
+  "version": "1.0.0",
+  "tools": [
+    {
+      "name": "search_images",
+      "description": "Search for images by keyword from phone gallery",
+      "parameters": {
+        "keyword": {
+          "type": "string",
+          "description": "Keyword to search for in image filenames or metadata",
+          "required": true
+        },
+        "limit": {
+          "type": "integer",
+          "description": "Maximum number of results to return",
+          "default": 10
+        }
+      },
+      "example": {
+        "keyword": "sunset",
+        "limit": 5
+      }
+    },
+    {
+      "name": "get_device_info",
+      "description": "Get device information such as battery, storage, network status",
+      "parameters": {}
+    },
+    {
+      "name": "send_notification",
+      "description": "Send a notification to the phone",
+      "parameters": {
+        "title": {
+          "type": "string",
+          "description": "Notification title",
+          "required": true
+        },
+        "body": {
+          "type": "string",
+          "description": "Notification body text",
+          "required": true
+        },
+        "urgency": {
+          "type": "string",
+          "description": "Notification urgency level",
+          "default": "normal",
+          "enum": ["low", "normal", "high"]
+        }
+      }
+    },
+    {
+      "name": "get_location",
+      "description": "Get current GPS location",
+      "parameters": {
+        "accuracy": {
+          "type": "string",
+          "description": "Location accuracy",
+          "default": "balanced",
+          "enum": ["high", "balanced", "low"]
+        }
+      }
+    },
+    {
+      "name": "install_app",
+      "description": "Install an application package (APK) on the phone",
+      "parameters": {
+        "apk_path": {
+          "type": "string",
+          "description": "Path to the APK file to install",
+          "required": true
+        },
+        "method": {
+          "type": "string",
+          "description": "Installation method: auto, pm, or cmd",
+          "default": "auto"
+        },
+        "allow_version_downgrade": {
+          "type": "boolean",
+          "description": "Allow version downgrade if APK version is lower",
+          "default": false
+        },
+        "grant_runtime_permissions": {
+          "type": "boolean",
+          "description": "Grant runtime permissions during install (Android 6.0+)",
+          "default": true
+        }
+      },
+      "example": {
+        "apk_path": "/sdcard/Download/myapp.apk",
+        "method": "auto"
+      }
+    }
+  ]
+}

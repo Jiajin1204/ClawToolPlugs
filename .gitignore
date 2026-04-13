@@ -1,0 +1,21 @@
+# Build artifacts
+build/
+android-build/
+
+# Binary outputs
+*.sock
+*.pid
+
+# Editor files
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Environment
+.env
+.env.local
+
+# Dependencies (phone-tools)
+phone-tools/node_modules/
+phone-tools/dist/

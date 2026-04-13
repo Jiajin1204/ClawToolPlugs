@@ -1,0 +1,38 @@
+{
+  "id": "phone-tools",
+  "name": "Phone Tools",
+  "description": "Access phone native tools via Unix socket connection",
+  "version": "1.0.0",
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "socketPath": {
+        "type": "string",
+        "description": "Path to the Unix socket for communication with phone service",
+        "default": "/tmp/phone_service.sock"
+      },
+      "reconnectDelayMs": {
+        "type": "integer",
+        "description": "Delay in milliseconds between reconnection attempts",
+        "default": 2000,
+        "minimum": 100,
+        "maximum": 30000
+      },
+      "connectTimeoutMs": {
+        "type": "integer",
+        "description": "Connection timeout in milliseconds",
+        "default": 5000,
+        "minimum": 1000,
+        "maximum": 60000
+      },
+      "requestTimeoutMs": {
+        "type": "integer",
+        "description": "Request timeout in milliseconds for tool execution",
+        "default": 30000,
+        "minimum": 1000,
+        "maximum": 120000
+      }
+    }
+  }
+}
