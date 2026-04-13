@@ -1,211 +1,301 @@
-# Phone Native Service
+# ClawToolPlugs
 
-A C++ Unix socket server that provides tool capabilities to OpenClaw.
+本项目包含两个组件，用于将手机原生能力暴露给 OpenClaw AI Agent：
 
-## Overview
+- **phone-service**：C++ 原生服务，通过 Unix Socket 提供手机工具能力
+- **phone-tools**：TypeScript 插件，连接 phone-service 并将工具注册到 OpenClaw
 
-This service runs on a mobile device and exposes native device capabilities (camera, GPS, storage, etc.) as tools via Unix socket. The OpenClaw `phone-tools` plugin connects to this service to access these tools.
+## 架构图
 
-## Prerequisites
+```
+┌─────────────────────────────────────────────────────────────┐
+│                        OpenClaw                              │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │                   phone-tools 插件                    │    │
+│  │  - 连接 phone-service (Unix Socket)                  │    │
+│  │  - 注册工具到 OpenClaw (phone_xxx)                   │    │
+│  │  - 自动重连机制                                      │    │
+│  └─────────────────────────────────────────────────────┘    │
+└─────────────────────────────────────────────────────────────┘
+                              │ Unix Socket
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    phone-service (C++)                       │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │  search_images    - 搜索相册图片                       │    │
+│  │  get_device_info  - 获取设备信息                       │    │
+│  │  send_notification - 发送通知                         │    │
+│  │  get_location     - 获取 GPS 位置                      │    │
+│  │  install_app       - 安装 APK                         │    │
+│  └─────────────────────────────────────────────────────┘    │
+└─────────────────────────────────────────────────────────────┘
+```
 
-- C++17 compatible compiler (GCC 9+, Clang 10+, or MSVC 2019+)
-- CMake 3.16+
-- nlohmann/json v3.11.3+
+## 项目结构
 
-### Installing Dependencies
+```
+ClawToolPlugs/
+├── phone-service/           # C++ 原生服务
+│   ├── src/                 # 源代码
+│   │   ├── main.cpp         # 入口
+│   │   ├── server.cpp/h     # Unix Socket 服务器
+│   │   ├── protocol.cpp/h   # JSON 协议处理
+│   │   ├── tool_registry.cpp/h  # 工具注册
+│   │   └── tools/           # 各个工具实现
+│   ├── build.sh             # 编译脚本
+│   ├── tools.json           # 静态工具配置
+│   └── CMakeLists.txt
+├── phone-tools/             # TypeScript 插件
+│   ├── src/
+│   │   ├── index.ts         # 插件入口
+│   │   ├── socket-client.ts # Socket 客户端
+│   │   └── types.ts         # 类型定义
+│   ├── package.json
+│   └── tsconfig.json
+└── README.md
+```
 
-**Ubuntu/Debian:**
+---
+
+## 一、编译 phone-service
+
+### Linux 本地编译
+
 ```bash
-sudo apt install cmake build-essential nlohmann-json3-dev
+cd phone-service
+./build.sh linux
 ```
 
-**macOS:**
-```bash
-brew install cmake nlohmann-json
-```
+编译产物：`phone-service/build/phone_service`
 
-**Android (with NDK):**
-```bash
-# Set up Android NDK environment
-export ANDROID_NDK_HOME=/path/to/ndk
-```
-
-**Using vcpkg:**
-```bash
-vcpkg install nlohmann-json:x64-linux
-```
-
-## Project Structure
-
-```
-phone-service/
-├── CMakeLists.txt          # Build configuration
-├── tools.json              # Static tool configuration
-├── README.md               # This file
-├── docs/
-│   └── protocol.md         # Communication protocol docs
-└── src/
-    ├── main.cpp            # Application entry point
-    ├── server.h/cpp        # Unix socket server
-    ├── tool_registry.h/cpp # Tool registration and execution
-    ├── protocol.h/cpp      # JSON protocol handling
-    └── tools/
-        ├── json.hpp        # nlohmann/json header
-        ├── search_images.h/cpp   # Image search tool
-        ├── get_device_info.h/cpp # Device info tool
-        ├── send_notification.h/cpp # Notification tool
-        └── get_location.h/cpp     # Location tool
-```
-
-## Building
-
-### Standard Build
+### Android 交叉编译（需要 Android NDK）
 
 ```bash
-# Create build directory
+cd phone-service
+./build.sh android
+```
+
+编译产物：`phone-service/build/phone_service`（ARM aarch64）
+
+### 单独使用 NDK 编译
+
+```bash
+cd phone-service
+rm -rf build
 mkdir build && cd build
 
-# Configure
-cmake ..
-
-# Build
-make -j$(nproc)
-
-# Install (optional)
-sudo make install
-```
-
-### Android NDK Build
-
-```bash
-# Create standalone toolchain (one-time setup)
-${ANDROID_NDK_HOME}/build/tools/make-standalone-toolchain.sh \
-    --arch arm64 \
-    --install-dir=/opt/android-toolchain
-
-# Configure with toolchain
-mkdir build && cd build
-cmake -DCMAKE_TOOLCHAIN_FILE=/opt/android-toolchain/sysroot/usr/share/cmake/android-ndk.cmake \
+cmake -DCMAKE_TOOLCHAIN_FILE=${ANDROID_NDK_HOME}/build/cmake/android-ndk.cmake \
       -DANDROID_ABI=arm64-v8a \
-      -DANDROID_PLATFORM=android-24 \
+      -DANDROID_PLATFORM=android-21 \
       ..
 
-make
+make -j$(nproc)
 ```
 
-## Running
+---
+
+## 二、编译 phone-tools
 
 ```bash
-# Default socket path
-./phone_service
-
-# Custom socket path
-./phone_service --socket /data/local/tmp/phone_service.sock
-
-# Custom tools config
-./phone_service --config /path/to/tools.json
-
-# Full options
-./phone_service -s /tmp/phone_service.sock -c tools.json
+cd phone-tools
+npm install
+npm run build
 ```
 
-## Available Tools
+编译产物：`phone-tools/dist/`
 
-### search_images
-Search for images by keyword in the phone gallery.
+---
 
-**Parameters:**
-- `keyword` (string, required): Search keyword
-- `limit` (integer, optional): Max results (default: 10)
+## 三、安装到新手机
 
-**Example:**
+假设手机 IP 为 `192.168.1.100`，使用 ADB 或其他方式传输文件。
+
+### 3.1 部署 phone-service
+
+```bash
+# 创建目录
+adb shell mkdir -p /data/data/com.termux/files/home/phone-service
+
+# 上传可执行文件和配置
+adb push build/phone_service /data/data/com.termux/files/home/phone-service/
+adb push tools.json /data/data/com.termux/files/home/phone-service/
+
+# 设置执行权限
+adb shell chmod +x /data/data/com.termux/files/home/phone-service/phone_service
+```
+
+### 3.2 部署 phone-tools
+
+```bash
+# 上传插件
+adb push dist/ /data/data/com.termux/files/home/openclaw-plugins/phone-tools/
+```
+
+### 3.3 启动 phone-service
+
+```bash
+# 在手机 Termux 中执行
+cd /data/data/com.termux/files/home/phone-service
+./phone_service -s phone_service.sock -c tools.json &
+
+# 确认启动成功
+logcat | grep phone_service
+# 应看到: [server] Started on phone_service.sock
+```
+
+---
+
+## 四、配置 OpenClaw
+
+编辑 OpenClaw 配置文件 `openclaw.json`：
+
+```bash
+adb shell nano /data/data/com.termux/files/home/openclaw.json
+```
+
+添加插件配置：
+
 ```json
 {
-  "type": "execute",
-  "tool": "search_images",
-  "params": {
-    "keyword": "sunset",
-    "limit": 5
+  "plugins": {
+    "phone-tools": {
+      "enabled": true,
+      "config": {
+        "socketPath": "/data/data/com.termux/files/home/phone-service/phone_service.sock"
+      }
+    }
   }
 }
 ```
 
-### get_device_info
-Get device information (battery, storage, network).
+---
 
-**Parameters:** None
+## 五、验证测试
 
-**Example:**
+### 5.1 检查 phone-service 运行状态
+
+```bash
+adb shell logcat | grep phone_service
+```
+
+应看到：
+```
+[server] Started on phone_service.sock
+```
+
+### 5.2 重启 OpenClaw
+
+```bash
+adb shell pkill openclaw
+adb shell openclaw gateway &
+```
+
+### 5.3 检查插件加载
+
+```bash
+adb shell logcat | grep phone-tools
+```
+
+应看到：
+```
+[phone-tools] Registering phone-tools plugin
+[phone-tools] Connected to phone service
+[phone-tools] Received 5 tools from phone service
+[phone-tools] Registered tool: phone_search_images
+[phone-tools] Registered tool: phone_get_device_info
+[phone-tools] Registered tool: phone_send_notification
+[phone-tools] Registered tool: phone_get_location
+[phone-tools] Registered tool: phone_install_app
+```
+
+### 5.4 测试工具执行
+
+在 OpenClaw 对话中测试：
+
+```
+用户: 搜索我相册里猫咪的照片
+助手: (调用 phone_search_images)
+
+用户: 我的手机电量是多少？
+助手: (调用 phone_get_device_info)
+
+用户: 给我发个通知测试
+助手: (调用 phone_send_notification)
+```
+
+---
+
+## 六、可用工具
+
+| 工具名 | 说明 | 参数 |
+|--------|------|------|
+| `phone_search_images` | 搜索相册图片 | `keyword`（必填），`limit`（可选，默认10） |
+| `phone_get_device_info` | 获取设备信息 | 无 |
+| `phone_send_notification` | 发送通知 | `title`（必填），`body`（必填），`urgency`（可选） |
+| `phone_get_location` | 获取 GPS 位置 | `accuracy`（可选：high/balanced/low） |
+| `phone_install_app` | 安装 APK | `apk_path`（必填），`method`（可选：auto/pm/cmd） |
+
+---
+
+## 七、常见问题
+
+| 问题 | 解决方法 |
+|------|----------|
+| `phone_service: command not found` | 执行 `chmod +x phone_service` |
+| `Connection refused` | 检查 socket 文件是否存在 |
+| `Timeout 30s` | 检查 phone-service 是否正常响应请求 |
+| `Permission denied` | 执行 `chmod 777 phone_service.sock` |
+
+### 查看日志
+
+```bash
+# phone-service 日志
+adb shell logcat | grep phone_service
+
+# OpenClaw 日志
+adb shell logcat | grep openclaw
+
+# 实时查看所有相关日志
+adb shell logcat | grep -E "phone_service|phone-tools|openclaw"
+```
+
+### 停止服务
+
+```bash
+# 停止 phone-service
+adb shell pkill phone_service
+
+# 停止 OpenClaw
+adb shell pkill openclaw
+```
+
+---
+
+## 八、开发说明
+
+### 协议格式
+
+通信使用 Unix Socket，JSON 格式（每条消息以换行符分隔）：
+
 ```json
-{
-  "type": "execute",
-  "tool": "get_device_info",
-  "params": {}
-}
+// 请求工具列表
+{"type": "list_tools", "id": "req_1"}
+
+// 响应工具列表
+{"type": "tools", "tools": [...], "id": "req_1"}
+
+// 执行工具
+{"type": "execute", "tool": "xxx", "params": {...}, "id": "req_2"}
+
+// 执行结果
+{"type": "result", "success": true, "data": {...}, "id": "req_2"}
 ```
 
-### send_notification
-Send a notification to the phone.
+### 添加新工具
 
-**Parameters:**
-- `title` (string, required): Notification title
-- `body` (string, required): Notification body
-- `urgency` (string, optional): "low", "normal", "high" (default: "normal")
+1. 在 `phone-service/src/tools/` 下创建新工具文件
+2. 在 `tools.json` 中添加静态工具配置
+3. 重新编译 phone-service
+4. 重启服务
 
-### get_location
-Get current GPS location.
-
-**Parameters:**
-- `accuracy` (string, optional): "high", "balanced", "low" (default: "balanced")
-
-## Protocol
-
-Communication is via newline-delimited JSON over Unix domain socket.
-
-### Message Types
-
-| Type | Direction | Description |
-|------|----------|-------------|
-| `list_tools` | → | Request tool list |
-| `tools` | ← | Tool list response |
-| `execute` | → | Execute a tool |
-| `result` | ← | Execution result |
-| `error` | ← | Error response |
-| `ping` | → | Keep-alive ping |
-| `pong` | ← | Keep-alive response |
-| `register_dynamic` | → | Dynamic tool registration |
-| `unregister` | → | Unregister a tool |
-
-See [docs/protocol.md](docs/protocol.md) for full protocol specification.
-
-## Static vs Dynamic Tools
-
-**Static tools** are defined in `tools.json` and loaded at startup. These are compiled-in capabilities.
-
-**Dynamic tools** can be registered at runtime via the `register_dynamic` message. These are temporary and not persisted.
-
-## Signal Handling
-
-The service handles SIGINT and SIGTERM for clean shutdown:
-
-```bash
-# Send termination signal
-kill -TERM $(pidof phone_service)
-```
-
-## Testing
-
-```bash
-# Test with netcat
-nc -U /tmp/phone_service.sock
-
-# Send list_tools request
-echo '{"type":"list_tools"}' | nc -U /tmp/phone_service.sock
-
-# Send execute request
-echo '{"type":"execute","tool":"get_device_info","params":{}}' | nc -U /tmp/phone_service.sock
-```
-
-## License
-
-MIT
+详细开发文档待补充。
