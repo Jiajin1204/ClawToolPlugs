@@ -7,9 +7,56 @@
 
 import { definePluginEntry } from "openclaw/plugin-sdk/plugin-entry";
 import type { OpenClawPluginApi, PluginLogger } from "openclaw/plugin-sdk";
+import { Type, type TSchema } from "@sinclair/typebox";
 import { SocketClient } from "./src/socket-client.js";
-import type { PhoneToolsConfig, Tool } from "./src/types.js";
+import type { PhoneToolsConfig, Tool, ToolParameter } from "./src/types.js";
 import { DEFAULT_CONFIG } from "./src/types.js";
+
+/**
+ * Convert phone-service parameter format to TypeBox schema
+ */
+function paramToTypeBox(param: ToolParameter): TSchema {
+  switch (param.type) {
+    case "string":
+      return Type.String({
+        description: param.description,
+        default: param.default as string | undefined,
+      });
+    case "integer":
+      return Type.Number({
+        description: param.description,
+        default: param.default as number | undefined,
+      });
+    case "boolean":
+      return Type.Boolean({
+        description: param.description,
+        default: param.default as boolean | undefined,
+      });
+    case "array":
+      return Type.Array(Type.String(), {
+        description: param.description,
+      });
+    default:
+      return Type.String({ description: param.description });
+  }
+}
+
+/**
+ * Convert phone-service parameters to TypeBox schema
+ */
+function paramsToSchema(params: Record<string, ToolParameter>): TSchema {
+  const properties: Record<string, TSchema> = {};
+  const required: string[] = [];
+
+  for (const [key, param] of Object.entries(params)) {
+    properties[key] = paramToTypeBox(param);
+    if (param.required) {
+      required.push(key);
+    }
+  }
+
+  return Type.Object(properties, { additionalProperties: false });
+}
 
 // Re-export types for external use
 export type { PhoneToolsConfig, Tool, ConnectionState } from "./src/types.js";
@@ -76,7 +123,7 @@ export default definePluginEntry({
 
         // Register each tool
         for (const tool of tools) {
-          logger.info(`Registering tool: phone_${tool.name} with params: ${JSON.stringify(tool.parameters)}`);
+          logger.info(`Registering tool: phone_${tool.name}`);
 
           const executor = async (
             toolCallId: string,
@@ -86,7 +133,7 @@ export default definePluginEntry({
             logger.info(`[EXECUTE] phone_${tool.name} called with toolCallId=${toolCallId}, params=${JSON.stringify(params)}`);
             try {
               const result = await socketClient.executeTool(tool.name, params);
-              logger.info(`[EXECUTE] phone_${tool.name} result: success=${result.success}, data=${JSON.stringify(result.data)}, error=${result.error}`);
+              logger.info(`[EXECUTE] phone_${tool.name} result: success=${result.success}`);
               if (result.success) {
                 return {
                   content: [{ type: "text" as const, text: JSON.stringify(result.data, null, 2) }],
@@ -104,18 +151,21 @@ export default definePluginEntry({
             }
           };
 
+          const paramSchema = paramsToSchema(tool.parameters);
+          logger.info(`[REGISTER] phone_${tool.name} paramSchema: ${JSON.stringify(paramSchema)}`);
+
           const registration = api.registerTool(
             {
               name: `phone_${tool.name}`,
               label: `Phone: ${tool.name}`,
               description: `[Phone] ${tool.description}`,
-              parameters: tool.parameters,
+              parameters: paramSchema,
               execute: executor,
             },
             { optional: true }
           );
 
-          logger.info(`[REGISTER] phone_${tool.name} registration result: ${JSON.stringify(registration)}`);
+          logger.info(`[REGISTER] phone_${tool.name} registered successfully`);
         }
 
         logger.info(`Phone tools plugin initialized with ${tools.length} tools`);
