@@ -126,9 +126,14 @@ adb shell chmod +x /data/data/com.termux/files/home/phone-service/phone_service
 
 ### 3.2 部署 phone-tools
 
+OpenClaw 插件放在 `~/.openclaw/extensions/` 目录下。
+
 ```bash
-# 上传插件
-adb push dist/ /data/data/com.termux/files/home/openclaw-plugins/phone-tools/
+# 创建插件目录
+adb shell mkdir -p /data/data/com.termux/files/home/.openclaw/extensions
+
+# 上传编译好的插件（dist 目录内容）
+adb push dist/ /data/data/com.termux/files/home/.openclaw/extensions/phone-tools/
 ```
 
 ### 3.3 启动 phone-service
