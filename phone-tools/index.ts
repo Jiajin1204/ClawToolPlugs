@@ -76,37 +76,46 @@ export default definePluginEntry({
 
         // Register each tool
         for (const tool of tools) {
+          logger.info(`Registering tool: phone_${tool.name} with params: ${JSON.stringify(tool.parameters)}`);
+
           const executor = async (
             toolCallId: string,
             params: Record<string, unknown>,
             _signal?: AbortSignal
           ) => {
-            const result = await socketClient.executeTool(tool.name, params);
-            if (result.success) {
-              return {
-                content: [{ type: "text" as const, text: JSON.stringify(result.data, null, 2) }],
-                details: result.data,
-              };
-            } else {
-              return {
-                content: [{ type: "text" as const, text: result.error || "Tool execution failed" }],
-                details: { error: result.error },
-              };
+            logger.info(`[EXECUTE] phone_${tool.name} called with toolCallId=${toolCallId}, params=${JSON.stringify(params)}`);
+            try {
+              const result = await socketClient.executeTool(tool.name, params);
+              logger.info(`[EXECUTE] phone_${tool.name} result: success=${result.success}, data=${JSON.stringify(result.data)}, error=${result.error}`);
+              if (result.success) {
+                return {
+                  content: [{ type: "text" as const, text: JSON.stringify(result.data, null, 2) }],
+                  details: result.data,
+                };
+              } else {
+                return {
+                  content: [{ type: "text" as const, text: result.error || "Tool execution failed" }],
+                  details: { error: result.error },
+                };
+              }
+            } catch (err) {
+              logger.error(`[EXECUTE] phone_${tool.name} exception: ${err}`);
+              throw err;
             }
           };
 
-          api.registerTool(
+          const registration = api.registerTool(
             {
               name: `phone_${tool.name}`,
               label: `Phone: ${tool.name}`,
               description: `[Phone] ${tool.description}`,
-              parameters: {},
+              parameters: tool.parameters,
               execute: executor,
             },
             { optional: true }
           );
 
-          logger.info(`Registered tool: phone_${tool.name}`);
+          logger.info(`[REGISTER] phone_${tool.name} registration result: ${JSON.stringify(registration)}`);
         }
 
         logger.info(`Phone tools plugin initialized with ${tools.length} tools`);
