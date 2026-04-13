@@ -264,7 +264,11 @@ export class SocketClient extends EventEmitter {
    */
   async ping(): Promise<boolean> {
     try {
-      const response = await this.sendRequest({ type: MT.PING }) as Record<string, unknown>;
+      const result = await this.sendRequest({ type: MT.PING }) as ToolRequestResult;
+      if (!result.success) {
+        return false;
+      }
+      const response = result.data as Record<string, unknown>;
       return response.type === MT.PONG;
     } catch {
       return false;
@@ -314,7 +318,7 @@ export class SocketClient extends EventEmitter {
         } else if (msgType === MT.TOOLS) {
           pending.resolve({ success: true, data: message });
         } else if (msgType === MT.PONG) {
-          pending.resolve({ success: true });
+          pending.resolve({ success: true, data: message });
         } else {
           pending.resolve({ success: false, error: `Unknown response type: ${msgType}` });
         }
