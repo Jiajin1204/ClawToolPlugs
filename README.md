@@ -94,15 +94,14 @@ make -j$(nproc)
 
 ---
 
-## 二、编译 phone-tools
+## 二、安装 phone-tools 插件
+
+插件直接使用 TypeScript 源码，无需编译。OpenClaw 运行时可直接加载。
 
 ```bash
-cd phone-tools
-npm install
-npm run build
+# 拷贝插件到 extensions 目录
+adb push phone-tools/ /data/data/com.termux/files/home/.openclaw/extensions/phone-tools/
 ```
-
-编译产物：`phone-tools/dist/`
 
 ---
 
@@ -126,14 +125,9 @@ adb shell chmod +x /data/data/com.termux/files/home/phone-service/phone_service
 
 ### 3.2 部署 phone-tools
 
-OpenClaw 插件放在 `~/.openclaw/extensions/` 目录下。
-
 ```bash
-# 创建插件目录
-adb shell mkdir -p /data/data/com.termux/files/home/.openclaw/extensions
-
-# 上传编译好的插件（dist 目录内容）
-adb push dist/ /data/data/com.termux/files/home/.openclaw/extensions/phone-tools/
+# 直接拷贝 TypeScript 源码（无需编译）
+adb push phone-tools/ /data/data/com.termux/files/home/.openclaw/extensions/phone-tools/
 ```
 
 ### 3.3 启动 phone-service
