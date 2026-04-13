@@ -56,10 +56,14 @@ json make_error_message(const std::string& error, int code) {
     };
 }
 
-json make_pong_message() {
-    return {
+json make_pong_message(const std::string& id) {
+    json msg = {
         {"type", MSG_PONG}
     };
+    if (!id.empty()) {
+        msg["id"] = id;
+    }
+    return msg;
 }
 
 json make_registered_message(int count) {

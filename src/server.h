@@ -123,7 +123,7 @@ private:
     // Message handlers
     json handle_list_tools(const std::string& id);
     json handle_execute(const json& params, const std::string& id);
-    json handle_ping();
+    json handle_ping(const std::string& id);
     json handle_register_dynamic(const json& params);
     json handle_unregister(const json& params);
 

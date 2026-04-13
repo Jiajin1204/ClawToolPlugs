@@ -313,7 +313,7 @@ json SocketServer::process_message(int fd, const json& msg) {
     } else if (type == MSG_EXECUTE) {
         return handle_execute(msg, id);
     } else if (type == MSG_PING) {
-        return handle_ping();
+        return handle_ping(id);
     } else if (type == MSG_REGISTER_DYNAMIC) {
         return handle_register_dynamic(msg);
     } else if (type == MSG_UNREGISTER) {
@@ -347,8 +347,8 @@ json SocketServer::handle_execute(const json& params, const std::string& id) {
     return make_result_message(result.success, result.data, result.error_message, id);
 }
 
-json SocketServer::handle_ping() {
-    return make_pong_message();
+json SocketServer::handle_ping(const std::string& id) {
+    return make_pong_message(id);
 }
 
 json SocketServer::handle_register_dynamic(const json& params) {

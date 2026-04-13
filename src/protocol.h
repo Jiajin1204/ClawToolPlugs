@@ -56,9 +56,10 @@ json make_error_message(const std::string& error, int code = -1);
 
 /**
  * @brief Create a pong response for ping
+ * @param id Optional request ID to echo back
  * @return json message object
  */
-json make_pong_message();
+json make_pong_message(const std::string& id = "");
 
 /**
  * @brief Create a registered acknowledgment message
