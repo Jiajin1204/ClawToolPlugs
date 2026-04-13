@@ -189,8 +189,13 @@ export class SocketClient extends EventEmitter {
   async listTools(): Promise<Tool[]> {
     this.logger.debug?.("Requesting tool list");
 
-    const response = await this.sendRequest({ type: MT.LIST_TOOLS }) as Record<string, unknown>;
+    const result = await this.sendRequest({ type: MT.LIST_TOOLS }) as ToolRequestResult;
 
+    if (!result.success) {
+      throw new Error(result.error || "Failed to list tools");
+    }
+
+    const response = result.data as Record<string, unknown>;
     if (response.type !== MT.TOOLS) {
       throw new Error(`Unexpected response type: ${response.type}`);
     }
@@ -206,11 +211,21 @@ export class SocketClient extends EventEmitter {
   async executeTool(toolName: string, params: Record<string, unknown> = {}): Promise<ToolRequestResult> {
     this.logger.debug?.(`Executing tool: ${toolName}`);
 
-    const response = await this.sendRequest({
+    const result = await this.sendRequest({
       type: MT.EXECUTE,
       tool: toolName,
       params,
-    }) as Record<string, unknown>;
+    }) as ToolRequestResult;
+
+    if (!result.success) {
+      this.logger.error(`Tool execution error: ${result.error}`);
+      return {
+        success: false,
+        error: result.error,
+      };
+    }
+
+    const response = result.data as Record<string, unknown>;
 
     if (response.type === MT.ERROR) {
       const errResp = response as { error: string };
