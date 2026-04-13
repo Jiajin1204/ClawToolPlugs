@@ -4,22 +4,11 @@
   "private": true,
   "description": "OpenClaw plugin for accessing phone native tools via Unix socket",
   "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "scripts": {
-    "build": "tsc",
-    "clean": "rm -rf dist",
-    "prepublishOnly": "npm run build"
-  },
+  "main": "index.ts",
   "openclaw": {
-    "extensions": ["./dist/index.js"],
+    "extensions": ["./index.ts"],
     "compat": {
-      "pluginApi": ">=2026.3.24-beta.2",
       "minGatewayVersion": "2026.3.24-beta.2"
-    },
-    "build": {
-      "openclawVersion": "2026.3.24-beta.2",
-      "pluginSdkVersion": "2026.3.24-beta.2"
     }
   },
   "keywords": [
@@ -30,11 +19,5 @@
     "tools"
   ],
   "author": "",
-  "license": "MIT",
-  "devDependencies": {
-    "typescript": "^5.4.0"
-  },
-  "peerDependencies": {
-    "openclaw": ">=2026.3.24-beta.2"
-  }
+  "license": "MIT"
 }

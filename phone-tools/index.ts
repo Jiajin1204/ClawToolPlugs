@@ -7,12 +7,12 @@
 
 import { definePluginEntry } from "openclaw/plugin-sdk/plugin-entry";
 import type { OpenClawPluginApi, PluginLogger } from "openclaw/plugin-sdk";
-import { SocketClient } from "./socket-client.js";
-import type { PhoneToolsConfig, Tool } from "./types.js";
-import { DEFAULT_CONFIG } from "./types.js";
+import { SocketClient } from "./src/socket-client.js";
+import type { PhoneToolsConfig, Tool } from "./src/types.js";
+import { DEFAULT_CONFIG } from "./src/types.js";
 
 // Re-export types for external use
-export type { PhoneToolsConfig, Tool, ConnectionState } from "./types.js";
+export type { PhoneToolsConfig, Tool, ConnectionState } from "./src/types.js";
 
 /**
  * Plugin logger that prefixes messages with [phone-tools]
